@@ -11,6 +11,7 @@ import * as React from 'react';
 import { Linking, Platform, StyleSheet, View, useColorScheme } from 'react-native';
 import url from 'url';
 
+import * as Kernel from './kernel/Kernel';
 import ApolloClient from './api/ApolloClient';
 import { ColorTheme } from './constants/Colors';
 import {
@@ -68,6 +69,12 @@ export default function HomeApp() {
 
   React.useEffect(() => {
     addProjectHistoryListener();
+  }, []);
+
+  React.useEffect(() => {
+    Kernel.getLastCrashDate().then((a) =>
+      console.log(`getLastCrashDate: ${a} - typeof ${typeof a}`)
+    );
   }, []);
 
   React.useEffect(() => {

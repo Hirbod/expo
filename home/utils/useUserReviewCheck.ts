@@ -1,10 +1,12 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import * as StoreReview from 'expo-store-review';
+// import * as StoreReview from 'expo-store-review';
+import { CommonSnackDataFragment } from 'graphql/types';
 import { useEffect, useState } from 'react';
 import { EventSubscription } from 'react-native';
 
 import addListenerWithNativeCallback from './addListenerWithNativeCallback';
 import * as Kernel from '../kernel/Kernel';
+import { DevSession } from '../types/DevSession';
 
 export function listenForForegroundEvent(
   listener: (event: any) => Promise<any>
@@ -14,9 +16,16 @@ export function listenForForegroundEvent(
 
 const timeAtAppStartup = new Date();
 
-export const useUserReviewCheck = () => {
+type UseUserReviewCheckParams = {
+  projects?: DevSession[];
+  snacks?: CommonSnackDataFragment[];
+};
+
+export const useUserReviewCheck = ({ projects, snacks }: UseUserReviewCheckParams) => {
   const [appOpenedCounter, setAppOpenedCounter] = useState<number>();
-  const [shouldShowReviewSection, setShouldShowReviewSection] = useState(false);
+  const [shouldShowReviewSection1, setShouldShowReviewSection] = useState(false);
+
+  const shouldShowReviewSection = (projects?.length || 0) > 5 || (snacks?.length || 0) > 3;
 
   useEffect(() => {
     AsyncStorage.getItem('appOpenedCounter').then((c) => {
@@ -32,19 +41,19 @@ export const useUserReviewCheck = () => {
          * We should only prompt users to review the app if they seem to be
          * having a good experience, to check that we verify if the user has been
          * running the app for at least 10 minutes and has not experienced any
-         * crashes in the last 5 minutes.
+         * crashes in the last hour.
          */
         const timeNow = new Date();
         if (timeNow.getTime() - timeAtAppStartup.getTime() > 10 * 60 * 1000) {
           const lastCrash = await Kernel.getLastCrashDate();
 
-          if (!lastCrash || timeNow.getTime() - new Date(lastCrash).getTime() > 5 * 60 * 1000) {
-            const isStoreReviewAvailable = await StoreReview.isAvailableAsync();
+          if (!lastCrash || timeNow.getTime() - new Date(lastCrash).getTime() > 60 * 60 * 1000) {
+            // const isStoreReviewAvailable = await StoreReview.isAvailableAsync();
 
             setShouldShowReviewSection(true);
-            if (isStoreReviewAvailable) {
-              await StoreReview.requestReview();
-            }
+            // if (isStoreReviewAvailable) {
+            //   await StoreReview.requestReview();
+            // }
           }
         }
       });
@@ -57,7 +66,7 @@ export const useUserReviewCheck = () => {
 
   function requestStoreReview() {
     setShouldShowReviewSection(false);
-    StoreReview.requestReview();
+    // StoreReview.requestReview();
   }
 
   return {

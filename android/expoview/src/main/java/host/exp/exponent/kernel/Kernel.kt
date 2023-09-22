@@ -742,6 +742,26 @@ class Kernel : KernelInterface() {
     killOrphanedLauncherActivities()
   }
 
+  @Throws(JSONException::class)
+  private fun dispatchForegroundHomeEvent(
+    manifestUrl: String,
+    manifest: Manifest,
+    existingTask: AppTask?
+  ) {
+    queueEvent(
+      "ExponentKernel.addHistoryItem", Arguments.createMap(),
+      object : KernelEventCallback {
+        override fun onEventSuccess(result: ReadableMap) {
+          EXL.d(TAG, "Successfully called ExponentKernel.addHistoryItem in kernel JS.")
+        }
+
+        override fun onEventFailure(errorMessage: String?) {
+          EXL.e(TAG, "Error calling ExponentKernel.addHistoryItem in kernel JS: $errorMessage")
+        }
+      }
+    )
+  }
+
   /*
    *
    * Optimistic experiences

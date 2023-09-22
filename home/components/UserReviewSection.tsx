@@ -13,11 +13,18 @@ type Props = {
 };
 
 export default function UserReviewSection({ snacks, projects }: Props) {
-  const { shouldShowReviewSection, requestStoreReview, dismissReviewSection } =
-    useUserReviewCheck();
+  const [] = useState(false);
+  const [] = useState(false);
+
+  useEffect(() => {}, []);
+
+  const { shouldShowReviewSection, requestStoreReview, dismissReviewSection } = useUserReviewCheck({
+    projects,
+    snacks,
+  });
   const theme = useExpoTheme();
 
-  const onPressNeedsWork = () => {};
+  const onPressNotReally = () => {};
 
   if (!shouldShowReviewSection) {
     return null;
@@ -40,7 +47,7 @@ export default function UserReviewSection({ snacks, projects }: Props) {
           <Button.FadeOnPressContainer
             flex="1"
             bg="secondary"
-            onPress={onPressNeedsWork}
+            onPress={onPressNotReally}
             padding="tiny">
             <Button.Text
               align="center"
