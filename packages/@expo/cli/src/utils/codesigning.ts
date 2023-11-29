@@ -381,7 +381,12 @@ async function fetchAndCacheNewDevelopmentCodeSigningInfoAsync(
   easProjectId: string
 ): Promise<CodeSigningInfo | null> {
   const actor = await ensureLoggedInAsync();
-  const app = await AppQuery.byIdAsync(easProjectId);
+  let app: AppByIdQuery['app']['byId'];
+  try {
+    app = await AppQuery.byIdAsync(easProjectId);
+  } catch {
+    return null;
+  }
   if (!actorCanGetProjectDevelopmentCertificate(actor, app)) {
     return null;
   }

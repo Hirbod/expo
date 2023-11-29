@@ -8,6 +8,7 @@ import { vol } from 'memfs';
 import nullthrows from 'nullthrows';
 
 import { asMock } from '../../../../__tests__/asMock';
+import { AppQuery } from '../../../../api/graphql/queries/AppQuery';
 import { getUserAsync } from '../../../../api/user/user';
 import {
   mockExpoRootChain,
@@ -251,6 +252,110 @@ describe('_getManifestResponseAsync', () => {
     );
 
     const { body } = nullthrows(await getMultipartPartAsync('manifest', results));
+    expect(JSON.parse(body)).toEqual({
+      id: expect.any(String),
+      createdAt: expect.any(String),
+      runtimeVersion: '45.0.0',
+      launchAsset: {
+        key: 'bundle',
+        contentType: 'application/javascript',
+        url: 'https://localhost:8081/bundle.js',
+      },
+      assets: [],
+      metadata: {},
+      extra: {
+        eas: {
+          projectId: 'projectId',
+        },
+        expoClient: {
+          extra: {
+            eas: {
+              projectId: 'projectId',
+            },
+          },
+          hostUri: 'https://localhost:8081',
+          slug: 'slug',
+        },
+        expoGo: {},
+        scopeKey: expect.stringMatching(/@anonymous\/.*/),
+      },
+    });
+  });
+
+  it('returns an anon manifest when viewer does not have permission to view app', async () => {
+    jest.mocked(AppQuery.byIdAsync).mockImplementation(async () => {
+      throw new Error('test');
+    });
+
+    const middleware = createMiddleware();
+
+    const results = await middleware._getManifestResponseAsync({
+      responseContentType: ResponseContentType.MULTIPART_MIXED,
+      platform: 'android',
+      expectSignature: 'sig, keyid="expo-root", alg="rsa-v1_5-sha256"',
+      hostname: 'localhost',
+    });
+    expect(results.version).toBe('45.0.0');
+
+    const { body, headers: manifestPartHeaders } = nullthrows(
+      await getMultipartPartAsync('manifest', results)
+    );
+    expect(manifestPartHeaders.get('expo-signature')).toBe(undefined);
+
+    expect(JSON.parse(body)).toEqual({
+      id: expect.any(String),
+      createdAt: expect.any(String),
+      runtimeVersion: '45.0.0',
+      launchAsset: {
+        key: 'bundle',
+        contentType: 'application/javascript',
+        url: 'https://localhost:8081/bundle.js',
+      },
+      assets: [],
+      metadata: {},
+      extra: {
+        eas: {
+          projectId: 'projectId',
+        },
+        expoClient: {
+          extra: {
+            eas: {
+              projectId: 'projectId',
+            },
+          },
+          hostUri: 'https://localhost:8081',
+          slug: 'slug',
+        },
+        expoGo: {},
+        scopeKey: expect.stringMatching(/@anonymous\/.*/),
+      },
+    });
+  });
+
+  it('returns an anon manifest when viewer can view app but does not have permission to view account', async () => {
+    jest.mocked(AppQuery.byIdAsync).mockImplementation(async () => ({
+      id: 'blah',
+      scopeKey: 'scope-key',
+      ownerAccount: {
+        id: 'blah-other-account',
+      },
+    }));
+
+    const middleware = createMiddleware();
+
+    const results = await middleware._getManifestResponseAsync({
+      responseContentType: ResponseContentType.MULTIPART_MIXED,
+      platform: 'android',
+      expectSignature: 'sig, keyid="expo-root", alg="rsa-v1_5-sha256"',
+      hostname: 'localhost',
+    });
+    expect(results.version).toBe('45.0.0');
+
+    const { body, headers: manifestPartHeaders } = nullthrows(
+      await getMultipartPartAsync('manifest', results)
+    );
+    expect(manifestPartHeaders.get('expo-signature')).toBe(undefined);
+
     expect(JSON.parse(body)).toEqual({
       id: expect.any(String),
       createdAt: expect.any(String),
