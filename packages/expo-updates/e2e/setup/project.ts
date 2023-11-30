@@ -429,14 +429,35 @@ function transformAppJsonForE2E(
       android: { ...appJson.expo.android, package: 'dev.expo.updatese2e' },
       ios: { ...appJson.expo.ios, bundleIdentifier: 'dev.expo.updatese2e' },
       updates: {
-        ...appJson.updates,
-        fallbackToCacheTimeout: 3000,
+        ...appJson.expo.updates,
         url: `http://${process.env.UPDATES_HOST}:${process.env.UPDATES_PORT}/update`,
       },
       extra: {
         eas: {
           projectId: '55685a57-9cf3-442d-9ba8-65c7b39849ef',
         },
+      },
+    },
+  };
+}
+
+/**
+ * Modifies app.json in the E2E test app to add the properties we need, plus a fallback to cache timeout for testing startup procedure
+ */
+export function transformAppJsonForE2EWithFallbackToCacheTimeout(
+  appJson: any,
+  projectName: string,
+  runtimeVersion: string,
+  isTV: boolean
+) {
+  const transformedForE2E = transformAppJsonForE2E(appJson, projectName, runtimeVersion, isTV);
+  return {
+    ...transformedForE2E,
+    expo: {
+      ...transformedForE2E.expo,
+      updates: {
+        ...transformedForE2E.expo.updates,
+        fallbackToCacheTimeout: 3000,
       },
     },
   };
@@ -774,6 +795,33 @@ export async function setupUpdatesDisabledE2EAppAsync(
   // Copy Detox test file to e2e/tests directory
   await fs.copyFile(
     path.resolve(dirName, '..', 'fixtures', 'Updates-disabled.e2e.ts'),
+    path.join(projectRoot, 'e2e', 'tests', 'Updates.e2e.ts')
+  );
+}
+
+export async function setupUpdatesStartupE2EAppAsync(
+  projectRoot: string,
+  { localCliBin, repoRoot }: { localCliBin: string; repoRoot: string }
+) {
+  await copyCommonFixturesToProject(
+    projectRoot,
+    ['tsconfig.json', '.detoxrc.json', 'eas.json', 'eas-hooks', 'e2e', 'scripts'],
+    { appJsFileName: 'App.tsx', repoRoot, isTV: false }
+  );
+
+  // copy png assets and install extra package
+  await fs.copyFile(
+    path.resolve(dirName, '..', 'fixtures', 'test.png'),
+    path.join(projectRoot, 'test.png')
+  );
+  await spawnAsync(localCliBin, ['install', '@expo-google-fonts/inter'], {
+    cwd: projectRoot,
+    stdio: 'inherit',
+  });
+
+  // Copy Detox test file to e2e/tests directory
+  await fs.copyFile(
+    path.resolve(dirName, '..', 'fixtures', 'Updates-startup.e2e.ts'),
     path.join(projectRoot, 'e2e', 'tests', 'Updates.e2e.ts')
   );
 }
